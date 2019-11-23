@@ -16,7 +16,8 @@ const
   crypto = require('crypto'),
   express = require('express'),
   https = require('https'),
-  request = require('request');
+  request = require('request'),
+  axios = require('axios');
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -82,7 +83,7 @@ app.get('/webhook', function(req, res) {
  */
 app.post('/webhook', function (req, res) {
   var data = req.body;
-
+  console.log('verify', data);
   // Make sure this is a page subscription
   if (data.object == 'page') {
     // Iterate over each entry
@@ -142,6 +143,28 @@ app.get('/authorize', function(req, res) {
   });
 });
 
+async function fireCall() {
+  let fire = await axios.get('https://evacusafe-e8133.firebaseio.com/safeloc.json');
+  console.log('firebase loc', fire.data);
+  return fire.data;
+
+}
+
+async function fireAdd() {
+  
+
+}
+
+
+// Handles messages events
+function handleMessage(sender_psid, received_message) {
+
+}
+
+// Handles messaging_postbacks events
+function handlePostback(sender_psid, received_postback) {
+
+}
 /*
  * Verify that the callback came from Facebook. Using the App Secret from
  * the App Dashboard, we can verify the signature that is sent with each
@@ -233,6 +256,7 @@ function receivedMessage(event) {
   // You may get a text or attachment but not both
   var messageText = message.text;
   var messageAttachments = message.attachments;
+  var timestamp = message.timestamp;
   var quickReply = message.quick_reply;
 
   if (isEcho) {
@@ -242,7 +266,8 @@ function receivedMessage(event) {
     return;
   } else if (quickReply) {
     var quickReplyPayload = quickReply.payload;
-    console.log("Quick reply for message %s with payload %s",
+    console.log('rapid fire');
+    console.log("2Quick reply for message %s with payload %s",
       messageId, quickReplyPayload);
 
     sendTextMessage(senderID, "Quick reply tapped");
@@ -258,6 +283,10 @@ function receivedMessage(event) {
       case 'hello':
       case 'hi':
         sendHiMessage(senderID);
+        break;
+
+       case 'help':
+        sendButtonMessage(senderID);
         break;
 
       case 'image':
@@ -316,6 +345,11 @@ function receivedMessage(event) {
         sendTextMessage(senderID, messageText);
     }
   } else if (messageAttachments) {
+    //let location = message.attachments.payload.coordinates;
+    console.log('time', timestamp);
+    console.log('CHECK', messageAttachments);
+    console.log('payload CHE', messageAttachments[0].payload);
+    //console.log('coordinates', messageAttachments.payload.coordinates);
     sendTextMessage(senderID, "Message with attachment received");
   }
 }
@@ -443,7 +477,11 @@ function sendHiMessage(recipientId) {
     },
     message: {
       text: `
-         Are you in a safe location?
+Congrats on setting up your Messenger Bot!
+
+Right now, your bot can only respond to a few words. Try out "quick reply", "typing on", "button", or "image" to see how they work. You'll find a complete list of these commands in the "app.js" file. Anything else you type will just be mirrored until you create additional commands.
+
+For more details on how to create commands, go to https://developers.facebook.com/docs/messenger-platform/reference/send-api.
       `
     }
   }
@@ -584,6 +622,14 @@ function sendTextMessage(recipientId, messageText) {
  *
  */
 function sendButtonMessage(recipientId) {
+  let safeLoc = "43.12345,-76.12345";
+
+  fireCall()
+     .then((result)=>{
+        safeLoc = result
+     });
+
+  let demoUserLoc = "38.705048, -122.874867"
   var messageData = {
     recipient: {
       id: recipientId
@@ -593,19 +639,11 @@ function sendButtonMessage(recipientId) {
         type: "template",
         payload: {
           template_type: "button",
-          text: "This is test text",
+          text: "Here you go:",
           buttons:[{
             type: "web_url",
-            url: "https://www.oculus.com/en-us/rift/",
-            title: "Open Web URL"
-          }, {
-            type: "postback",
-            title: "Trigger Postback",
-            payload: "DEVELOPER_DEFINED_PAYLOAD"
-          }, {
-            type: "phone_number",
-            title: "Call Phone Number",
-            payload: "+16505551234"
+            url: `https://www.google.com/maps?saddr=${demoUserLoc}&daddr=${safeLoc}`,
+            title: "Route to Safe Location"
           }]
         }
       }
@@ -737,28 +775,34 @@ function sendReceiptMessage(recipientId) {
  *
  */
 function sendQuickReply(recipientId) {
+
+   fireCall()
+     .then((result)=>{
+        console.log('outer', result)
+     });
+
+
   var messageData = {
     recipient: {
       id: recipientId
     },
     message: {
-      text: "What's your favorite movie genre?",
+      text: `Hello, this is SafetyBeacon, an evacuation assistant. Respond to me for directions to safety
+
+      `
+      ,
       quick_replies: [
         {
           "content_type":"text",
-          "title":"Action",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
+          "title":"Get Safe Route",
+          "payload":"location"
         },
-        {
-          "content_type":"text",
-          "title":"Comedy",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY"
-        },
-        {
-          "content_type":"text",
-          "title":"Drama",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA"
-        }
+        // {
+        //   "content_type":"text",
+        //   "title":"Safe check",
+        //   "payload":"location"
+        // },
+        
       ]
     }
   };
