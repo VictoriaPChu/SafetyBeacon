@@ -152,9 +152,17 @@ handleClick = () => {
 						Evacuation Centers
 			</div>
 
-<p>Click the button to get your coordinates.</p>
 
-<button onClick={this.getLocation}>Try It</button>
+<button style={{ paddingTop: "2em", textAlign: "center", color: "red", backgroundColor: "#4CAF50",
+  border: "none",
+  color: "white",
+  padding: "15px 32px",
+  textAlign: "center",
+  textDecoration: "none",
+  display: "inline-block",
+  fontSize: "16px",
+  margin: "4px 2px",
+  cursor: "pointer" }} onClick={this.getLocation}>Check In</button>
 
 <p id="demo"></p>
 
